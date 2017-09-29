@@ -1,0 +1,25 @@
+{
+    "name": "jorjsmile/laravel-model-validate",
+    "description": "A trait that will bring ability to validate attributes inside model itself",
+    "type": "extension",
+    "require": {
+        "laravel/framework": "5.5.*"
+    },
+    "autoload": {
+        "classmap":[
+             "tests"
+        ]
+    },
+    "autoload-dev":{
+       "psr-4" : {
+         "Jorjsmile\\LaravelModelValidate\\" :  "packages/laravel-model-validate/src"
+       }
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "George Katernyak",
+            "email": "jorjsmile@gmail.com"
+        }
+    ]
+}

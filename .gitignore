@@ -1,0 +1,5 @@
+#ignore ides
+\.idea
+
+#ignore vendors
+vendor
