@@ -2,6 +2,7 @@
     "name": "jorjsmile/laravel-model-validate",
     "description": "A trait that will bring ability to validate attributes inside model itself",
     "type": "extension",
+    "minimum-stability" : "stable",
     "require": {
         "laravel/framework": "5.5.*",
 	"phpunit/phpunit": "~6.0",
