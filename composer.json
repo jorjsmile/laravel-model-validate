@@ -3,16 +3,21 @@
     "description": "A trait that will bring ability to validate attributes inside model itself",
     "type": "extension",
     "require": {
-        "laravel/framework": "5.5.*"
+        "laravel/framework": "5.5.*",
+	"phpunit/phpunit": "~6.0",
+        "orchestra/testbench": "3.5.*"
     },
     "autoload": {
         "classmap":[
              "tests"
-        ]
+        ],
+        "psr-4" : {
+            "Jorjsmile\\LaravelModelValidate\\" :  "src"
+        }
     },
     "autoload-dev":{
        "psr-4" : {
-         "Jorjsmile\\LaravelModelValidate\\" :  "packages/laravel-model-validate/src"
+         "Jorjsmile\\LaravelModelValidate\\" :  "src"
        }
     },
     "license": "MIT",

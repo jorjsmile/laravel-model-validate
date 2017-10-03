@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Arr;
 use Illuminate\Support\MessageBag;
+use Illuminate\Validation\Validator;
 
 /**
  * Created by PhpStorm.
@@ -56,6 +58,7 @@ trait TValidate
     /**
      * Should return an array of rules for current model
      * e.g. return [ 'name' => [['required'],['string']], 'id' =>[['integer']] ]
+     * Name of the rules you can find in laravel documentation.
      * @return array
      */
     abstract protected function getValidationRules() : array;
@@ -67,28 +70,31 @@ trait TValidate
      */
     public function validate($fields = []) : bool
     {
-        if(!$this->beforeValidate()) return false;
+        if($this->beforeValidate() === false) return false;
 
         $this->flushErrors();
-        $data = $this->getAttributes();
-        $rules = $this->getScenarioRules( $fields );
+        $scenario = $this->_scenario?:$this->resolveDefaultScenario();
 
         if($this->_validateRelations){
             $this->diveDeeper();
         }
 
+        $data = $this->getAttributes();
+        $rules = $this->getScenarioRules( $fields, $scenario );
+
+
         if(empty($rules))
             $this->setErrors( new MessageBag() ); // return empty errors bag
-        else
-            $this->setErrors(
-                $this->provideValidator($data, $rules)
-                    ->errors()
-            );
+        else{
+            $validator = $this->provideValidator($data, $rules);
+            if($validator->fails())
+                $this->setErrors( $validator->errors() );
+        }
+
 
         $this->afterValidate();
         return !$this->hasErrors();
     }
-
 
     /**
      * @param array $data
@@ -150,19 +156,20 @@ trait TValidate
      * List of rules for specific scenario
      *
      * @param array $fields
+     * @param string $scenario
      * @return array
      */
-    public function getScenarioRules($fields = [])
+    public function getScenarioRules($fields = [], $scenario = "")
     {
 
         $rules = $this->getValidationRules();
+        $fields = (array) $fields;
 
         if(!empty($fields))
             $rules = array_intersect_key($rules, array_flip($fields));
 
         if(empty($rules)) return [];
         $out = [];
-        $scenario = $this->getScenario();
         foreach ($rules as $attr => $attributeRules) {
             foreach ($attributeRules as $r)
                 if (!isset($r["scenario"]) || in_array($scenario, $r["scenario"])) {
@@ -201,41 +208,32 @@ trait TValidate
         return $this;
     }
 
+
+
     /**
-     * Fire the given event for the model.
-     *
-     * @param  string  $event
-     * @param  bool    $halt
-     * @return mixed
+     * Provide default scenario
+     * @return string
      */
-    public function fireModelEvent($event, $halt = true)
+    public function resolveDefaultScenario()
     {
-        if (! isset(static::$dispatcher)) {
-            return true;
-        }
+        return $this->exists? "update" : "insert";
+    }
 
-        // We will append the names of the class to the event to distinguish it from
-        // other model events that are fired, allowing us to listen on each model
-        // event set individually instead of catching event from all the models.
-        $event = "eloquent.{$event}: ".get_class($this);
-
-        $method = 'fire'; // - in that case make a workaround for all events (saving, booting ... )
-
-        $result = static::$dispatcher->$method($event, $this);
-
-        if(empty($result)) //there are no registered events
-            return true;
-
-        //in case that: dispatcher stops event propagation when one of the
-        //listeners returns false -- we transfer that result to control flow
-        return end($result);
+    /**
+     * unset scenario
+     * @return $this
+     */
+    public function resetScenario()
+    {
+        $this->_scenario = "";
+        return $this;
     }
 
 
     /** ================================= Deeper Validation Coverage ============================================ */
 
     /**
-     * It will try to validate all of currently initializated relations that has this trait OFC
+     * It will try to validate all of currently initialized relations, those of them that has this trait OFC
      */
     public function diveDeeper()
     {
@@ -277,7 +275,7 @@ trait TValidate
                 case BelongsToMany::class :
 
                     foreach ($model as $k => $m)
-                        $this->validateRelation($name, $relation, $m);
+                        $this->validateRelation($name."[$k]", $relation, $m);
 
                     break;
             }
@@ -301,8 +299,7 @@ trait TValidate
              */
             $fkName = $relation->getForeignKeyName();
             $pkName = $this->getKeyName();
-
-            if(!isset($data[$fkName])){ //`required validation` assignment
+            if(!($model->$fkName)){ //`required validation` assignment
                 //set new one relation or existing one
                 $model->$fkName =  $this->$pkName ?? -1;
             }
@@ -327,7 +324,7 @@ trait TValidate
      */
     public function hasTValidateTrait($model) : bool
     {
-        return in_array("TValidate", class_uses($model));
+        return in_array("TValidate", class_uses($model)) || in_array(TValidate::class, class_uses($model));
     }
 
     ////////////////////////////////////// Deeper Validation Coverage ///////////////////////////////////////////////
@@ -356,17 +353,12 @@ trait TValidate
         if(!$this->_errors instanceof MessageBag)
             $this->_errors = new MessageBag();
 
-        $this->_errors->add($key, $value);
+        $this->_errors->merge([$key => (array) $value]);
     }
 
     public function flushErrors()
     {
         $this->_errors = new MessageBag();
-    }
-
-    public function getMessages()
-    {
-        return $this->messages;
     }
 
     ////////////////////////////////////// Controls over ErrorMessageBag ///////////////////////////////////////////////
