@@ -2,3 +2,5 @@
 
 Install: 
 > composer require jorjsmile/laravel-model-validate 
+
+.
