@@ -79,9 +79,12 @@ trait TValidate
             $this->diveDeeper();
         }
 
-        $data = $this->getAttributes();
-        $rules = $this->getScenarioRules( $fields, $scenario );
 
+        $rules = $this->getScenarioRules( $fields, $scenario );
+        $data = [];
+        foreach($rules as $field=>$specs){
+            $data[$field] = $this->getAttribute($field);
+        }
 
         if(empty($rules))
             $this->setErrors( new MessageBag() ); // return empty errors bag
