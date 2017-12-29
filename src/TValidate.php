@@ -312,7 +312,7 @@ trait TValidate
             $relationErrors = $model->getErrors()->getMessages();
 
             foreach ($relationErrors as $field => $error)
-                $this->addError($name . "::" . $field, $error);//add error
+                $this->addError($name . "." . $field, $error);//add error
 
         }
 
