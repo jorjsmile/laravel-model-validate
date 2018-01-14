@@ -243,6 +243,7 @@ trait TValidate
         $relations = array_filter($this->getRelations());
 
         foreach ($relations as $name => $model) {
+            if(!method_exists($this, $name)) continue;
             /**
              * @var Relation $relation
              */
